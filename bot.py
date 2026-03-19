@@ -49,7 +49,7 @@ async def on_ready():
     tree.copy_global_to(guild=guild)
     await tree.sync(guild=guild)
     check_shielded_ops.start()
-    await start_web(port=8090)
+    await start_web(port=3000)
     log.info(f"Tip bot online as {bot.user}")
     log.info("Landing page at http://localhost:8080")
 

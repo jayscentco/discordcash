@@ -2,7 +2,7 @@ services:
   discordcash:
     image: ghcr.io/jayscentco/discordcash:latest
     ports:
-      - "8090:8090"
+      - "3000:3000"
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - TIP_EMOJI=${TIP_EMOJI}
