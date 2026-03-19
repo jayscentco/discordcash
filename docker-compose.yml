@@ -1,19 +1,12 @@
 services:
   discordcash:
-    image: python:3.11-slim
-    working_dir: /app
-    volumes:
-      - /var/run/dstack.sock:/var/run/dstack.sock
+    image: ghcr.io/jayscentco/discordcash:latest
     ports:
-      - 8080:8090
+      - "8090:8090"
     environment:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
-      - TIP_EMOJI=${TIP_EMOJI:-💰}
-      - DEFAULT_TIP_AMOUNT=${DEFAULT_TIP_AMOUNT:-0.01}
-      - MOCK_MODE=${MOCK_MODE:-true}
-      - MIN_WITHDRAW=${MIN_WITHDRAW:-0.001}
-    command: >
-      bash -c "
-        pip install --no-cache-dir discord.py aiosqlite aiohttp httpx python-dotenv coincurve &&
-        python bot.py
-      "
+      - TIP_EMOJI=${TIP_EMOJI}
+      - DEFAULT_TIP_AMOUNT=${DEFAULT_TIP_AMOUNT}
+      - MOCK_MODE=${MOCK_MODE}
+      - MIN_WITHDRAW=${MIN_WITHDRAW}
+    restart: unless-stopped
