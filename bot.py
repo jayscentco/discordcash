@@ -71,7 +71,7 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
         try:
             user = await bot.fetch_user(payload.user_id)
             await user.send(
-                f"Insufficient balance ({tipper['balance']:.4f} ZEC). Use `/deposit` to add funds."
+                f"Insufficient balance. Use `/deposit` to add funds."
             )
         except discord.Forbidden:
             pass
