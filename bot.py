@@ -9,7 +9,6 @@ import config
 import database as db
 from zcash_client import zcash
 from web import start_web
-from cashu_mint import Mint, Wallet
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("tipbot")
@@ -22,20 +21,7 @@ intents.members = True
 bot = discord.Client(intents=intents)
 tree = app_commands.CommandTree(bot)
 
-# Cashu mint and wallet (server-side)
-mint = Mint()
-wallet = Wallet(mint)
-
-# Track pending shielded operations (withdrawals)
 pending_ops: dict[str, dict] = {}
-
-
-def zec_to_zats(zec: float) -> int:
-    return int(round(zec * 10000))
-
-
-def zats_to_zec(zats: int) -> float:
-    return zats / 10000
 
 
 # ── Events ──────────────────────────────────────────────────────────────
@@ -44,19 +30,16 @@ def zats_to_zec(zats: int) -> float:
 @bot.event
 async def on_ready():
     await db.init_db()
-    await mint.setup()
     guild = discord.Object(id=1429785830389448749)
     tree.copy_global_to(guild=guild)
     await tree.sync(guild=guild)
     check_shielded_ops.start()
     await start_web(port=3000)
     log.info(f"Tip bot online as {bot.user}")
-    log.info("Landing page at http://localhost:8080")
 
 
 @bot.event
 async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
-    """Reaction tip — blind token transfer."""
     if str(payload.emoji) != config.TIP_EMOJI:
         return
     if payload.user_id == bot.user.id:
@@ -77,65 +60,42 @@ async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
     if not tipper:
         try:
             user = await bot.fetch_user(payload.user_id)
-            await user.send(
-                "You tried to tip but don't have an account yet! "
-                "Use `/deposit` to get started."
-            )
+            await user.send("You need an account first! Use `/deposit` to get started.")
         except discord.Forbidden:
             pass
         return
 
-    tip_zats = zec_to_zats(tipper["default_tip"])
+    tip_amount = tipper["default_tip"]
 
-    # Load tipper's blind tokens
-    tipper_proofs = await wallet.load_proofs(payload.user_id)
-    tipper_balance = sum(p.amount for p in tipper_proofs)
-
-    if tipper_balance < tip_zats:
+    if tipper["balance"] < tip_amount:
         try:
             user = await bot.fetch_user(payload.user_id)
             await user.send(
-                f"Insufficient balance ({zats_to_zec(tipper_balance):.4f} ZEC). "
-                f"Use `/deposit` to add funds."
+                f"Insufficient balance ({tipper['balance']:.4f} ZEC). Use `/deposit` to add funds."
             )
         except discord.Forbidden:
             pass
         return
 
-    # Ensure recipient has an account
     recipient = await db.get_user(message.author.id)
     if not recipient:
         deposit_addr = await zcash.get_new_shielded_address()
         await db.get_or_create_user(message.author.id, deposit_addr)
 
-    try:
-        # Blind token swap
-        send_proofs, keep_proofs = await wallet.prepare_send(tipper_proofs, tip_zats)
-        received_proofs = await wallet.receive(send_proofs)
-
-        # Update stored proofs
-        await wallet.delete_proofs(payload.user_id, [p.secret for p in tipper_proofs])
-        await wallet.save_proofs(payload.user_id, keep_proofs)
-        await wallet.save_proofs(message.author.id, received_proofs)
-
-        # Record tip count (no amounts)
-        await db.record_tip_count(payload.user_id, message.author.id)
-    except Exception as e:
-        log.error(f"Blind token tip failed: {e}")
+    success = await db.transfer_balance(payload.user_id, message.author.id, tip_amount)
+    if not success:
         return
 
-    # DM recipient
     try:
         tipper_user = await bot.fetch_user(payload.user_id)
         recipient_user = await bot.fetch_user(message.author.id)
         await recipient_user.send(
             f"**{tipper_user.display_name}** tipped you!\n"
-            f"Use `/balance` to check your funds or `/withdraw` to cash out."
+            f"Use `/balance` to check your funds."
         )
     except discord.Forbidden:
         pass
 
-    # Confirm in channel
     try:
         tipper_user = await bot.fetch_user(payload.user_id)
         await channel.send(
@@ -173,19 +133,15 @@ async def balance(interaction: discord.Interaction):
         )
         return
 
-    balance_zats = await wallet.get_balance(interaction.user.id)
     await interaction.response.send_message(
-        f"**Balance:** {zats_to_zec(balance_zats):.4f} ZEC\n"
-        f"**Default tip:** {user['default_tip']:.4f} ZEC\n"
-        f"Use `/withdraw` to cash out.",
+        f"**Balance:** {user['balance']:.4f} ZEC\n"
+        f"**Default tip:** {user['default_tip']:.4f} ZEC",
         ephemeral=True,
     )
 
 
 @tree.command(name="withdraw", description="Withdraw ZEC to your wallet")
-@app_commands.describe(
-    amount="Amount of ZEC to withdraw", address="Destination Zcash address"
-)
+@app_commands.describe(amount="Amount of ZEC to withdraw", address="Destination Zcash address")
 async def withdraw(interaction: discord.Interaction, amount: float, address: str):
     await interaction.response.defer(ephemeral=True)
 
@@ -195,9 +151,11 @@ async def withdraw(interaction: discord.Interaction, amount: float, address: str
         return
 
     if amount < config.MIN_WITHDRAW:
-        await interaction.followup.send(
-            f"Minimum withdrawal: {config.MIN_WITHDRAW} ZEC", ephemeral=True
-        )
+        await interaction.followup.send(f"Minimum withdrawal: {config.MIN_WITHDRAW} ZEC", ephemeral=True)
+        return
+
+    if user["balance"] < amount:
+        await interaction.followup.send(f"Insufficient balance ({user['balance']:.4f} ZEC).", ephemeral=True)
         return
 
     try:
@@ -208,37 +166,18 @@ async def withdraw(interaction: discord.Interaction, amount: float, address: str
         await interaction.followup.send("Invalid Zcash address.", ephemeral=True)
         return
 
-    amount_zats = zec_to_zats(amount)
-    proofs = await wallet.load_proofs(interaction.user.id)
-    balance_zats = sum(p.amount for p in proofs)
-
-    if balance_zats < amount_zats:
-        await interaction.followup.send(
-            f"Insufficient balance ({zats_to_zec(balance_zats):.4f} ZEC).", ephemeral=True
-        )
-        return
+    await db.update_balance(interaction.user.id, -amount)
 
     try:
-        send_proofs, keep_proofs = await wallet.prepare_send(proofs, amount_zats)
-        melted_zats = await wallet.melt(send_proofs)
-
-        await wallet.delete_proofs(interaction.user.id, [p.secret for p in proofs])
-        await wallet.save_proofs(interaction.user.id, keep_proofs)
-
-        zec_amount = zats_to_zec(melted_zats)
         bot_z_addr = await zcash.get_new_shielded_address()
-        opid = await zcash.send_shielded(bot_z_addr, address, zec_amount)
-        pending_ops[opid] = {
-            "from_user": interaction.user.id,
-            "amount_zats": melted_zats,
-        }
-
+        opid = await zcash.send_shielded(bot_z_addr, address, amount)
+        pending_ops[opid] = {"from_user": interaction.user.id, "amount": amount}
         await interaction.followup.send(
-            f"Withdrawal of {zec_amount:.4f} ZEC initiated via shielded pool.",
-            ephemeral=True,
+            f"Withdrawal of {amount:.4f} ZEC initiated via shielded pool.", ephemeral=True
         )
     except Exception as e:
         log.error(f"Withdraw failed: {e}")
+        await db.update_balance(interaction.user.id, amount)
         await interaction.followup.send(f"Withdrawal failed: {e}", ephemeral=True)
 
 
@@ -251,18 +190,11 @@ async def settip(interaction: discord.Interaction, amount: float):
 
     user = await db.get_user(interaction.user.id)
     if not user:
-        await interaction.response.send_message(
-            "No account yet. Use `/deposit` first.", ephemeral=True
-        )
+        await interaction.response.send_message("No account yet. Use `/deposit` first.", ephemeral=True)
         return
 
     await db.set_default_tip(interaction.user.id, amount)
-    await interaction.response.send_message(
-        f"Default tip set to {amount:.4f} ZEC.", ephemeral=True
-    )
-
-
-# ── Direct Tip ─────────────────────────────────────────────────────────
+    await interaction.response.send_message(f"Default tip set to {amount:.4f} ZEC.", ephemeral=True)
 
 
 @tree.command(name="tip", description="Tip a user (works in DMs and servers)")
@@ -285,14 +217,8 @@ async def tip(interaction: discord.Interaction, user: discord.User, amount: floa
         await interaction.followup.send("No account yet. Use `/deposit` first.", ephemeral=True)
         return
 
-    amount_zats = zec_to_zats(amount)
-    sender_proofs = await wallet.load_proofs(interaction.user.id)
-    sender_balance = sum(p.amount for p in sender_proofs)
-
-    if sender_balance < amount_zats:
-        await interaction.followup.send(
-            f"Insufficient balance ({zats_to_zec(sender_balance):.4f} ZEC).", ephemeral=True
-        )
+    if sender["balance"] < amount:
+        await interaction.followup.send(f"Insufficient balance ({sender['balance']:.4f} ZEC).", ephemeral=True)
         return
 
     recipient = await db.get_user(user.id)
@@ -300,18 +226,9 @@ async def tip(interaction: discord.Interaction, user: discord.User, amount: floa
         addr = await zcash.get_new_shielded_address()
         await db.get_or_create_user(user.id, addr)
 
-    try:
-        send_proofs, keep_proofs = await wallet.prepare_send(sender_proofs, amount_zats)
-        received_proofs = await wallet.receive(send_proofs)
-
-        await wallet.delete_proofs(interaction.user.id, [p.secret for p in sender_proofs])
-        await wallet.save_proofs(interaction.user.id, keep_proofs)
-        await wallet.save_proofs(user.id, received_proofs)
-
-        await db.record_tip_count(interaction.user.id, user.id)
-    except Exception as e:
-        log.error(f"Tip failed: {e}")
-        await interaction.followup.send("Tip failed — please try again.", ephemeral=True)
+    success = await db.transfer_balance(interaction.user.id, user.id, amount)
+    if not success:
+        await interaction.followup.send("Tip failed.", ephemeral=True)
         return
 
     try:
@@ -338,8 +255,7 @@ async def setaddress(interaction: discord.Interaction, address: str):
 
     await db.set_zaddress(interaction.user.id, address)
     await interaction.response.send_message(
-        "Address saved. Others can use `/anontip @you` to tip you directly.",
-        ephemeral=True,
+        "Address saved. Others can use `/anontip @you` to tip you directly.", ephemeral=True
     )
 
 
@@ -347,7 +263,6 @@ async def setaddress(interaction: discord.Interaction, address: str):
 @app_commands.describe(user="The user you want to tip anonymously")
 async def anontip(interaction: discord.Interaction, user: discord.User):
     recipient = await db.get_user(user.id)
-
     if not recipient or not recipient.get("zaddress"):
         await interaction.response.send_message(
             f"**{user.display_name}** hasn't shared their Zcash address yet.\n"
@@ -384,8 +299,8 @@ async def leaderboard(interaction: discord.Interaction):
         lines = []
         for i, (user_id, count) in enumerate(top_tippers, 1):
             try:
-                user = await bot.fetch_user(user_id)
-                name = user.display_name
+                u = await bot.fetch_user(user_id)
+                name = u.display_name
             except Exception:
                 name = f"User {user_id}"
             medal = ["\U0001f947", "\U0001f948", "\U0001f949"][i - 1] if i <= 3 else f"**{i}.**"
@@ -398,8 +313,8 @@ async def leaderboard(interaction: discord.Interaction):
         lines = []
         for i, (user_id, count) in enumerate(top_receivers, 1):
             try:
-                user = await bot.fetch_user(user_id)
-                name = user.display_name
+                u = await bot.fetch_user(user_id)
+                name = u.display_name
             except Exception:
                 name = f"User {user_id}"
             medal = ["\U0001f947", "\U0001f948", "\U0001f949"][i - 1] if i <= 3 else f"**{i}.**"
@@ -415,7 +330,6 @@ async def leaderboard(interaction: discord.Interaction):
 
 RAIN_EMOJI = "\U0001f327\ufe0f"
 RAIN_DURATION = 7200
-
 active_rains: dict[int, dict] = {}
 
 
@@ -431,30 +345,16 @@ async def rain(interaction: discord.Interaction, amount: float):
 
     sender = await db.get_user(interaction.user.id)
     if not sender:
+        await interaction.response.send_message("No account yet. Use `/deposit` first.", ephemeral=True)
+        return
+
+    if sender["balance"] < amount:
         await interaction.response.send_message(
-            "No account yet. Use `/deposit` first.", ephemeral=True
+            f"Insufficient balance ({sender['balance']:.4f} ZEC).", ephemeral=True
         )
         return
 
-    amount_zats = zec_to_zats(amount)
-    sender_proofs = await wallet.load_proofs(interaction.user.id)
-    sender_balance = sum(p.amount for p in sender_proofs)
-
-    if sender_balance < amount_zats:
-        await interaction.response.send_message(
-            f"Insufficient balance ({zats_to_zec(sender_balance):.4f} ZEC).", ephemeral=True
-        )
-        return
-
-    # Reserve tokens
-    try:
-        send_proofs, keep_proofs = await wallet.prepare_send(sender_proofs, amount_zats)
-        await wallet.delete_proofs(interaction.user.id, [p.secret for p in sender_proofs])
-        await wallet.save_proofs(interaction.user.id, keep_proofs)
-    except Exception as e:
-        log.error(f"Rain reserve failed: {e}")
-        await interaction.response.send_message("Rain failed — try again.", ephemeral=True)
-        return
+    await db.update_balance(interaction.user.id, -amount)
 
     await interaction.response.send_message(
         f"\U0001f327\ufe0f **{interaction.user.display_name}** is making it rain!\n\n"
@@ -466,17 +366,14 @@ async def rain(interaction: discord.Interaction, amount: float):
 
     active_rains[rain_msg.id] = {
         "sender_id": interaction.user.id,
-        "send_proofs": send_proofs,
-        "amount_zats": amount_zats,
+        "amount": amount,
         "channel_id": interaction.channel_id,
     }
-
     bot.loop.create_task(finalize_rain(rain_msg.id, RAIN_DURATION))
 
 
 async def finalize_rain(message_id: int, delay: float):
     await asyncio.sleep(delay)
-
     rain_info = active_rains.pop(message_id, None)
     if not rain_info:
         return
@@ -488,8 +385,7 @@ async def finalize_rain(message_id: int, delay: float):
     try:
         message = await channel.fetch_message(message_id)
     except discord.NotFound:
-        # Refund
-        await wallet.save_proofs(rain_info["sender_id"], rain_info["send_proofs"])
+        await db.update_balance(rain_info["sender_id"], rain_info["amount"])
         return
 
     participants = set()
@@ -500,41 +396,29 @@ async def finalize_rain(message_id: int, delay: float):
                     participants.add(user.id)
 
     if not participants:
-        await wallet.save_proofs(rain_info["sender_id"], rain_info["send_proofs"])
-        await channel.send(
-            "\U0001f327\ufe0f Rain ended — nobody joined! Funds refunded.",
-            delete_after=30,
-        )
+        await db.update_balance(rain_info["sender_id"], rain_info["amount"])
+        await channel.send("\U0001f327\ufe0f Rain ended — nobody joined! Funds refunded.", delete_after=30)
         return
 
-    try:
-        total_zats = await wallet.melt(rain_info["send_proofs"])
-        per_user_zats = total_zats // len(participants)
+    per_user = rain_info["amount"] / len(participants)
+    recipient_names = []
+    for user_id in participants:
+        recipient = await db.get_user(user_id)
+        if not recipient:
+            addr = await zcash.get_new_shielded_address()
+            await db.get_or_create_user(user_id, addr)
+        await db.update_balance(user_id, per_user)
+        await db.record_tip_count(rain_info["sender_id"], user_id)
+        try:
+            u = await bot.fetch_user(user_id)
+            recipient_names.append(u.display_name)
+        except Exception:
+            recipient_names.append(f"User {user_id}")
 
-        recipient_names = []
-        for user_id in participants:
-            recipient = await db.get_user(user_id)
-            if not recipient:
-                addr = await zcash.get_new_shielded_address()
-                await db.get_or_create_user(user_id, addr)
-
-            new_proofs = await wallet.mint_tokens(per_user_zats)
-            await wallet.save_proofs(user_id, new_proofs)
-            await db.record_tip_count(rain_info["sender_id"], user_id)
-
-            try:
-                user = await bot.fetch_user(user_id)
-                recipient_names.append(user.display_name)
-            except Exception:
-                recipient_names.append(f"User {user_id}")
-
-        await channel.send(
-            f"\U0001f327\ufe0f **Rain complete!** Split across "
-            f"**{len(participants)}** users!\n\n"
-            f"Recipients: {', '.join(recipient_names)}"
-        )
-    except Exception as e:
-        log.error(f"Rain distribution failed: {e}")
+    await channel.send(
+        f"\U0001f327\ufe0f **Rain complete!** Split across **{len(participants)}** users!\n\n"
+        f"Recipients: {', '.join(recipient_names)}"
+    )
 
 
 # ── Mock Testing ───────────────────────────────────────────────────────
@@ -542,10 +426,7 @@ async def finalize_rain(message_id: int, delay: float):
 
 if config.MOCK_MODE:
 
-    @tree.command(
-        name="mockdeposit",
-        description="[TEST] Give yourself fake ZEC to test tipping",
-    )
+    @tree.command(name="mockdeposit", description="[TEST] Give yourself fake ZEC")
     @app_commands.describe(amount="Amount of fake ZEC to credit")
     async def mockdeposit(interaction: discord.Interaction, amount: float = 1.0):
         user = await db.get_user(interaction.user.id)
@@ -553,14 +434,10 @@ if config.MOCK_MODE:
             addr = await zcash.get_new_shielded_address()
             user = await db.get_or_create_user(interaction.user.id, addr)
 
-        amount_zats = zec_to_zats(amount)
-        proofs = await wallet.mint_tokens(amount_zats)
-        await wallet.save_proofs(interaction.user.id, proofs)
-
-        new_balance = await wallet.get_balance(interaction.user.id)
+        await db.update_balance(interaction.user.id, amount)
+        new_bal = user["balance"] + amount
         await interaction.response.send_message(
-            f"Credited {amount:.4f} ZEC.\nBalance: {zats_to_zec(new_balance):.4f} ZEC",
-            ephemeral=True,
+            f"Credited {amount:.4f} ZEC.\nBalance: {new_bal:.4f} ZEC", ephemeral=True
         )
 
 
@@ -569,7 +446,6 @@ if config.MOCK_MODE:
 
 @tasks.loop(seconds=15)
 async def check_shielded_ops():
-    """Monitor pending withdrawals."""
     completed = []
     for opid, info in pending_ops.items():
         try:
@@ -581,18 +457,13 @@ async def check_shielded_ops():
                 completed.append(opid)
             elif status["status"] == "failed":
                 log.error(f"Withdrawal {opid} failed")
-                # Refund
-                refund_proofs = await wallet.mint_tokens(info["amount_zats"])
-                await wallet.save_proofs(info["from_user"], refund_proofs)
+                await db.update_balance(info["from_user"], info["amount"])
                 completed.append(opid)
         except Exception as e:
             log.error(f"Op check failed for {opid}: {e}")
-
     for opid in completed:
         del pending_ops[opid]
 
-
-# ── Run ─────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     bot.run(config.DISCORD_TOKEN)
