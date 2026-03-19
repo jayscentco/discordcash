@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiscordCash — Tip Zcash on Discord</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #e0e0e0;
+            line-height: 1.65;
+            font-weight: 300;
+        }
+        a { color: #F3B724; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+        nav .logo { font-family: 'DM Serif Display', serif; color: #F3B724; font-size: 1.5rem; }
+        nav .links { display: flex; gap: 32px; }
+        nav .links a { color: #797576; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; }
+        nav .links a:hover { color: #F3B724; text-decoration: none; }
+
+        .hero {
+            text-align: center;
+            padding: 120px 20px 100px;
+        }
+        .hero h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 4.4rem;
+            color: #fff;
+            margin-bottom: 20px;
+            line-height: 1.1;
+        }
+        .hero h1 span { color: #F3B724; }
+        .hero .tagline { font-size: 1.35rem; color: #797576; margin-bottom: 48px; font-weight: 300; }
+        .cta-group { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .cta { display: inline-block; padding: 13px 40px; font-size: 0.875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; transition: all 0.2s; }
+        .cta-primary { background: #F3B724; color: #000; }
+        .cta-primary:hover { background: #d4a020; text-decoration: none; }
+        .cta-secondary { background: transparent; color: #F3B724; border: 1px solid #F3B724; }
+        .cta-secondary:hover { background: #F3B72415; text-decoration: none; }
+
+        .privacy-section { background: #271219; padding: 100px 20px; }
+        .privacy-inner { max-width: 680px; margin: 0 auto; text-align: center; }
+        .privacy-section h2 { font-family: 'DM Serif Display', serif; font-size: 2.5rem; color: #fff; margin-bottom: 24px; }
+        .privacy-section p { color: #E3DED7; font-size: 1.15rem; margin-bottom: 16px; font-weight: 300; line-height: 1.8; }
+        .privacy-section .highlight { color: #F3B724; font-weight: 500; }
+        .privacy-section .tech-link { margin-top: 32px; }
+        .privacy-section .tech-link a { color: #E3DED7; font-size: 0.85rem; font-weight: 500; letter-spacing: 0.15em; text-transform: uppercase; border-bottom: 1px solid #E3DED740; padding-bottom: 2px; }
+        .privacy-section .tech-link a:hover { color: #F3B724; border-color: #F3B724; text-decoration: none; }
+
+        .features-section { background: #F3F1EF; padding: 100px 20px; }
+        .features-inner { max-width: 1160px; margin: 0 auto; }
+        .features-section h2 { font-family: 'DM Serif Display', serif; font-size: 2.5rem; color: #141529; margin-bottom: 48px; text-align: center; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+        .feature { background: #fff; border: 1px solid #E3DED7; padding: 32px; transition: border-color 0.2s; }
+        .feature:hover { border-color: #F3B724; }
+        .feature .icon { font-size: 2rem; margin-bottom: 16px; }
+        .feature h3 { font-size: 1rem; font-weight: 700; color: #141529; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .feature p { color: #797576; font-size: 0.95rem; }
+
+        footer { background: #000; text-align: center; padding: 40px 20px; color: #333; font-size: 0.875rem; border-top: 1px solid #1a1a1a; }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .features { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">DiscordCash</div>
+        <div class="links">
+            <a href="/commands">Commands</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/tech">How It Works</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>Tip Zcash on <span>Discord</span></h1>
+        <p class="tagline">Nobody sees how much.</p>
+        <div class="cta-group">
+            <a class="cta cta-primary" href="/commands">Get Started</a>
+            <a class="cta cta-secondary" href="/leaderboard">Leaderboard</a>
+        </div>
+    </div>
+
+    <div class="privacy-section">
+        <div class="privacy-inner">
+            <h2>Private by Default</h2>
+            <p>
+                Like likes on X &mdash; you can see the count, but not who liked.
+                We flip that: <span class="highlight">you can see who tipped, but never how much</span>.
+            </p>
+            <p>
+                That's not a policy. It's <span class="highlight">math</span>.
+            </p>
+            <div class="tech-link">
+                <a href="/tech">See the technical architecture &rarr;</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="features-inner">
+            <h2>Features</h2>
+            <div class="features">
+                <div class="feature">
+                    <div class="icon">&#x26A1;</div>
+                    <h3>Reaction Tipping</h3>
+                    <p>React with &#x1F4B0; on any message to tip the author. Instant. No commands needed.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">&#x1F50F;</div>
+                    <h3>Blind Token Privacy</h3>
+                    <p>Tips use Cashu blind signatures. The server signs tokens it cannot read. Amounts stay hidden.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">&#x1F3AD;</div>
+                    <h3>Truly Anonymous Tips</h3>
+                    <p>Use /anontip for a Zcash payment link. Send directly from your wallet. The bot sees nothing.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">&#x1F327;&#xFE0F;</div>
+                    <h3>Rain Events</h3>
+                    <p>Split ZEC across everyone who reacts within 2 hours. Amounts stay private.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">&#x1F6E1;&#xFE0F;</div>
+                    <h3>Shielded Entry & Exit</h3>
+                    <p>Zcash shielded addresses for deposits and withdrawals. Amounts hidden on-chain.</p>
+                </div>
+                <div class="feature">
+                    <div class="icon">&#x1F3C6;</div>
+                    <h3>Count-Only Leaderboard</h3>
+                    <p>Ranked by number of tips, not amounts. Recognition without financial exposure.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        DiscordCash &mdash; Powered by <a href="https://z.cash">Zcash</a> &amp; <a href="https://cashu.space">Cashu</a>
+    </footer>
+
+</body>
+</html>

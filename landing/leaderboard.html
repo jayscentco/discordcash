@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard — DiscordCash</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #e0e0e0;
+            line-height: 1.65;
+            font-weight: 300;
+        }
+        a { color: #F3B724; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+        nav .logo {
+            font-family: 'DM Serif Display', serif;
+            color: #F3B724;
+            font-size: 1.5rem;
+        }
+        nav .links { display: flex; gap: 32px; }
+        nav .links a {
+            color: #797576;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        nav .links a:hover { color: #F3B724; text-decoration: none; }
+
+        .section {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        .section h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .section .subtitle {
+            color: #797576;
+            text-align: center;
+            margin-bottom: 48px;
+            font-weight: 300;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            justify-content: center;
+        }
+        .tab {
+            padding: 10px 24px;
+            cursor: pointer;
+            background: #0a0a0a;
+            color: #797576;
+            border: 1px solid #1a1a1a;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+        .tab:hover { border-color: #333; }
+        .tab.active { background: #F3B724; color: #000; border-color: #F3B724; }
+
+        .board {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            overflow: hidden;
+        }
+        .board-row {
+            display: flex;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid #111;
+            transition: background 0.15s;
+        }
+        .board-row:last-child { border-bottom: none; }
+        .board-row:hover { background: #111; }
+        .board-row .rank {
+            width: 48px;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .board-row .name {
+            flex: 1;
+            color: #fff;
+            font-weight: 500;
+        }
+        .board-row .amount {
+            color: #F3B724;
+            font-weight: 600;
+            font-size: 1.05rem;
+        }
+        .board-row.top-3 .name { font-size: 1.1rem; }
+
+        .empty {
+            text-align: center;
+            color: #797576;
+            padding: 60px 20px;
+            font-size: 1.05rem;
+        }
+        .hidden { display: none; }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            border-top: 1px solid #1a1a1a;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a class="logo" href="/">DiscordCash</a>
+        <div class="links">
+            <a href="/commands">Commands</a>
+            <a href="/leaderboard">Leaderboard</a>
+        </div>
+    </nav>
+
+    <div class="section">
+        <h1>Leaderboard</h1>
+        <p class="subtitle">Ranked by number of tips &mdash; never amounts.</p>
+
+        <div class="tabs">
+            <div class="tab active" onclick="showTab('tippers')">Most Generous</div>
+            <div class="tab" onclick="showTab('receivers')">Most Appreciated</div>
+        </div>
+
+        <div id="tippers-board" class="board"></div>
+        <div id="tippers-empty" class="empty">No tips yet &mdash; be the first!</div>
+
+        <div id="receivers-board" class="board hidden"></div>
+        <div id="receivers-empty" class="empty hidden">No tips yet &mdash; be the first!</div>
+    </div>
+
+    <footer>
+        DiscordCash &mdash; Powered by <a href="https://z.cash">Zcash</a> &amp; <a href="https://cashu.space">Cashu</a>
+    </footer>
+
+    <script>
+        const medals = ['\u{1F947}', '\u{1F948}', '\u{1F949}'];
+
+        function showTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tippers-board').classList.add('hidden');
+            document.getElementById('tippers-empty').classList.add('hidden');
+            document.getElementById('receivers-board').classList.add('hidden');
+            document.getElementById('receivers-empty').classList.add('hidden');
+
+            if (tab === 'tippers') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                const board = document.getElementById('tippers-board');
+                const empty = document.getElementById('tippers-empty');
+                (board.children.length ? board : empty).classList.remove('hidden');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                const board = document.getElementById('receivers-board');
+                const empty = document.getElementById('receivers-empty');
+                (board.children.length ? board : empty).classList.remove('hidden');
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                const resp = await fetch('/api/leaderboard');
+                const data = await resp.json();
+                renderBoard('tippers-board', 'tippers-empty', data.tippers);
+                renderBoard('receivers-board', 'receivers-empty', data.receivers);
+            } catch (e) {}
+        }
+
+        function renderBoard(boardId, emptyId, rows) {
+            const board = document.getElementById(boardId);
+            const empty = document.getElementById(emptyId);
+
+            if (!rows || rows.length === 0) {
+                board.classList.add('hidden');
+                if (boardId === 'tippers-board') empty.classList.remove('hidden');
+                return;
+            }
+
+            if (boardId === 'tippers-board') empty.classList.add('hidden');
+            board.classList.remove('hidden');
+
+            board.innerHTML = rows.map((row, i) => `
+                <div class="board-row ${i < 3 ? 'top-3' : ''}">
+                    <div class="rank">${i < 3 ? medals[i] : (i + 1) + '.'}</div>
+                    <div class="name">${row.name}</div>
+                    <div class="amount">${row.count} tips</div>
+                </div>
+            `).join('');
+        }
+
+        loadLeaderboard();
+    </script>
+</body>
+</html>

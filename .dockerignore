@@ -1,0 +1,6 @@
+activity/
+__pycache__/
+*.pyc
+.env
+tipbot.db
+.git/

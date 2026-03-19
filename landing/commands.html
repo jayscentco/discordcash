@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commands — DiscordCash</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #e0e0e0;
+            line-height: 1.65;
+            font-weight: 300;
+        }
+        a { color: #F3B724; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+        nav .logo {
+            font-family: 'DM Serif Display', serif;
+            color: #F3B724;
+            font-size: 1.5rem;
+        }
+        nav .links { display: flex; gap: 32px; }
+        nav .links a {
+            color: #797576;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        nav .links a:hover { color: #F3B724; text-decoration: none; }
+
+        .section {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 60px 20px;
+        }
+        .section h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+        .section .subtitle {
+            color: #797576;
+            margin-bottom: 48px;
+            font-size: 1.05rem;
+            font-weight: 300;
+        }
+        .group { margin-bottom: 40px; }
+        .group h2 {
+            color: #797576;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 16px;
+        }
+        .commands { display: grid; gap: 12px; }
+        .cmd {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            padding: 16px 20px;
+            transition: border-color 0.2s;
+        }
+        .cmd:hover { border-color: #F3B72440; }
+        .cmd-header {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .cmd code {
+            background: #1a1a2e;
+            color: #F3B724;
+            padding: 4px 10px;
+            font-size: 0.9rem;
+        }
+        .cmd p { color: #797576; font-size: 0.9rem; margin: 0; }
+        .cmd .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+        .badge-activity { background: #1f0d1a; color: #e879f9; }
+        .badge-discord { background: #0d0d1f; color: #818cf8; }
+        .badge-wallet { background: #0d1f0d; color: #4ade80; }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            border-top: 1px solid #1a1a1a;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a class="logo" href="/">DiscordCash</a>
+        <div class="links">
+            <a href="/commands">Commands</a>
+            <a href="/leaderboard">Leaderboard</a>
+        </div>
+    </nav>
+
+    <div class="section">
+        <h1>Commands</h1>
+        <p class="subtitle">Discord commands and the in-app wallet Activity work together.</p>
+
+        <div class="group">
+            <h2>Tipping</h2>
+            <div class="commands">
+                <div class="cmd">
+                    <div class="cmd-header">
+                        <code>React &#x1F4B0;</code>
+                        <span class="badge badge-activity">Confirm in Activity</span>
+                    </div>
+                    <p>React on any message to tip the author. Opens the Activity to confirm and fund the tip with blind tokens.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header">
+                        <code>/tip @user amount</code>
+                        <span class="badge badge-activity">Confirm in Activity</span>
+                    </div>
+                    <p>Tip someone directly. Creates a pending tip &mdash; open the Activity to fund it.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>/settip amount</code></div>
+                    <p>Set your default tip amount for reaction tips (default: 0.01 ZEC). Only you know this value.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>/rain amount</code></div>
+                    <p>Start a rain event. Anyone who reacts with &#x1F327;&#xFE0F; within 2 hours gets a pending tip to claim.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="group">
+            <h2>Anonymous</h2>
+            <div class="commands">
+                <div class="cmd">
+                    <div class="cmd-header">
+                        <code>/anontip @user</code>
+                        <span class="badge badge-wallet">Wallet-to-wallet</span>
+                    </div>
+                    <p>Get a ZIP-321 payment link. Send directly from Zodl or any Zcash wallet. The bot never sees the transaction.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>/setaddress z1abc...</code></div>
+                    <p>Share your Zcash z-address so others can send you anonymous tips via /anontip.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="group">
+            <h2>Wallet Activity</h2>
+            <div class="commands">
+                <div class="cmd">
+                    <div class="cmd-header">
+                        <code>Open Activity</code>
+                        <span class="badge badge-activity">In-Discord panel</span>
+                    </div>
+                    <p>Your wallet runs inside Discord as an embedded app. All crypto happens in your browser &mdash; the server never sees your tokens.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>Deposit</code></div>
+                    <p>Get a shielded z-address, send ZEC, then mint blind tokens in your browser.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>Balance</code></div>
+                    <p>Stored locally in your browser. The server doesn't know your balance.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>Withdraw</code></div>
+                    <p>Burn blind tokens and receive ZEC to any z-address via the shielded pool.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>Claim Tips</code></div>
+                    <p>See pending inbound tips and claim them. Your browser mints fresh blind tokens.</p>
+                </div>
+                <div class="cmd">
+                    <div class="cmd-header"><code>Backup</code></div>
+                    <p>Export your tokens as JSON. If you clear browser data, tokens are gone &mdash; back up regularly.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="group">
+            <h2>Community</h2>
+            <div class="commands">
+                <div class="cmd">
+                    <div class="cmd-header"><code>/leaderboard</code></div>
+                    <p>Ranked by number of tips &mdash; not amounts. See who's most generous and most appreciated.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        DiscordCash &mdash; Powered by <a href="https://z.cash">Zcash</a> &amp; <a href="https://cashu.space">Cashu</a>
+    </footer>
+
+</body>
+</html>

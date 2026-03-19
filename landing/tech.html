@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How It Works — DiscordCash</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: #000;
+            color: #e0e0e0;
+            line-height: 1.65;
+            font-weight: 300;
+        }
+        a { color: #F3B724; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1160px;
+            margin: 0 auto;
+            padding: 24px 20px;
+        }
+        nav .logo {
+            font-family: 'DM Serif Display', serif;
+            color: #F3B724;
+            font-size: 1.5rem;
+        }
+        nav .links { display: flex; gap: 32px; }
+        nav .links a {
+            color: #797576;
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+        nav .links a:hover { color: #F3B724; text-decoration: none; }
+
+        .content {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 60px 20px 100px;
+        }
+        .content h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+        .content .subtitle {
+            color: #797576;
+            font-size: 1.05rem;
+            margin-bottom: 56px;
+        }
+        .content h2 {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.6rem;
+            color: #fff;
+            margin-top: 56px;
+            margin-bottom: 16px;
+        }
+        .content p {
+            color: #999;
+            font-size: 1rem;
+            margin-bottom: 16px;
+            line-height: 1.8;
+        }
+        .content strong { color: #E3DED7; font-weight: 500; }
+        .content code {
+            background: #111;
+            color: #F3B724;
+            padding: 2px 6px;
+            font-size: 0.9rem;
+        }
+
+        /* Layer diagram */
+        .layers {
+            margin: 40px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+        .layer {
+            padding: 24px;
+            border: 1px solid #1a1a1a;
+        }
+        .layer-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-bottom: 6px;
+        }
+        .layer h3 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+        .layer p { margin-bottom: 0; font-size: 0.9rem; }
+
+        .layer-zcash { background: #0d1f0d; border-color: #1a3a1a; }
+        .layer-zcash .layer-label, .layer-zcash h3 { color: #4ade80; }
+        .layer-zcash p { color: #6fcc8f; }
+        .layer-cashu { background: #1f1a0d; border-color: #3a2a1a; }
+        .layer-cashu .layer-label, .layer-cashu h3 { color: #F3B724; }
+        .layer-cashu p { color: #c9a64e; }
+        .layer-wallet { background: #1f0d1a; border-color: #3a1a2a; }
+        .layer-wallet .layer-label, .layer-wallet h3 { color: #e879f9; }
+        .layer-wallet p { color: #c97ac9; }
+        .layer-discord { background: #0d0d1f; border-color: #1a1a3a; }
+        .layer-discord .layer-label, .layer-discord h3 { color: #818cf8; }
+        .layer-discord p { color: #7a82c9; }
+
+        .arrow { text-align: center; padding: 8px 0; color: #333; font-size: 1rem; }
+
+        /* Privacy table */
+        .priv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+        }
+        .priv-table th {
+            text-align: left;
+            padding: 12px 16px;
+            color: #797576;
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            border-bottom: 1px solid #1a1a1a;
+        }
+        .priv-table td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #111;
+            font-size: 0.9rem;
+            color: #999;
+        }
+        .priv-table td:first-child { color: #e0e0e0; font-weight: 400; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-right: 6px;
+        }
+        .badge-hidden { background: #1a3a1a; color: #4ade80; }
+        .badge-visible { background: #1a1a2e; color: #818cf8; }
+        .badge-limited { background: #3a3a1a; color: #F3B724; }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #333;
+            border-top: 1px solid #1a1a1a;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .content h1 { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a class="logo" href="/">DiscordCash</a>
+        <div class="links">
+            <a href="/commands">Commands</a>
+            <a href="/leaderboard">Leaderboard</a>
+            <a href="/tech">How It Works</a>
+        </div>
+    </nav>
+
+    <div class="content">
+        <h1>How It Works</h1>
+        <p class="subtitle">The technical architecture behind DiscordCash.</p>
+
+        <h2>Architecture</h2>
+
+        <div class="layers">
+            <div class="layer layer-zcash">
+                <div class="layer-label">Zcash Shielded Pool</div>
+                <h3>Entry & exit. Deposits and withdrawals hidden on-chain.</h3>
+            </div>
+            <div class="arrow">&darr;</div>
+            <div class="layer layer-cashu">
+                <div class="layer-label">Cashu Blind Mint</div>
+                <h3>Server signs tokens it cannot read. Can't link deposits to withdrawals.</h3>
+            </div>
+            <div class="arrow">&darr;</div>
+            <div class="layer layer-wallet">
+                <div class="layer-label">Client-Side Wallet (Discord Activity)</div>
+                <h3>Runs in your browser. Tokens stored locally. Server never sees balances.</h3>
+            </div>
+            <div class="arrow">&darr;</div>
+            <div class="layer layer-discord">
+                <div class="layer-label">Discord</div>
+                <h3>Reactions and tip counts are public. Amounts are not.</h3>
+            </div>
+        </div>
+
+        <h2>Tip Flow</h2>
+        <p>
+            <strong>1. React</strong> &#x1F4B0; on a message. Bot creates a pending tip. No money moves yet.
+        </p>
+        <p>
+            <strong>2. Confirm</strong> in the Activity panel inside Discord. If the Activity is already open, it auto-detects the pending tip and prompts you. Your browser selects tokens, blinds the change, and submits to the server. The server escrows the tip amount without seeing it.
+        </p>
+        <p>
+            <strong>3. Claim.</strong> Recipient opens the Activity, sees the pending tip, clicks claim. Their browser mints fresh blind tokens.
+        </p>
+
+        <h2>Deposit & Withdrawal</h2>
+        <p>
+            <strong>Deposit:</strong> Open Activity &rarr; get a shielded z-address &rarr; send ZEC &rarr; mint blind tokens in your browser.
+        </p>
+        <p>
+            <strong>Withdrawal:</strong> Open Activity &rarr; burn tokens &rarr; ZEC sent to your z-address via shielded pool.
+        </p>
+
+        <h2>Anonymous Tips</h2>
+        <p>
+            <code>/anontip @user</code> generates a <a href="https://zips.z.cash/zip-0321">ZIP-321</a> payment link. You send from your own wallet. The bot only looked up the address &mdash; it's not involved in the transaction.
+        </p>
+
+        <h2>Privacy Summary</h2>
+        <table class="priv-table">
+            <thead>
+                <tr><th>Data</th><th>Visibility</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Who tipped whom</td>
+                    <td><span class="badge badge-visible">Visible</span> Discord reaction (public by design)</td>
+                </tr>
+                <tr>
+                    <td>Tip amounts</td>
+                    <td><span class="badge badge-hidden">Hidden</span> Blinded client-side, server never sees</td>
+                </tr>
+                <tr>
+                    <td>User balances</td>
+                    <td><span class="badge badge-hidden">Hidden</span> Stored in browser localStorage</td>
+                </tr>
+                <tr>
+                    <td>Deposit &rarr; tip &rarr; withdrawal trail</td>
+                    <td><span class="badge badge-hidden">Hidden</span> Blind signatures break the link</td>
+                </tr>
+                <tr>
+                    <td>On-chain deposits & withdrawals</td>
+                    <td><span class="badge badge-hidden">Hidden</span> Zcash shielded z-addresses</td>
+                </tr>
+                <tr>
+                    <td>Anonymous tips (/anontip)</td>
+                    <td><span class="badge badge-hidden">Hidden</span> Wallet-to-wallet, bot not involved</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Stack</h2>
+        <p>
+            <strong>Server:</strong> Python, aiohttp, aiosqlite, coincurve (secp256k1). Implements Cashu NUT-00 through NUT-05.
+        </p>
+        <p>
+            <strong>Client:</strong> Vite, <code>@cashu/cashu-ts</code>, <code>@discord/embedded-app-sdk</code>. Runs as a Discord Activity.
+        </p>
+        <p>
+            <strong>On-chain:</strong> zcashd for shielded transactions. Deposits via z-addresses, withdrawals via <code>z_sendmany</code>.
+        </p>
+        <p>
+            <strong>Protocol:</strong> <a href="https://zips.z.cash/zip-0321">ZIP-321</a> for anonymous tips. <a href="https://docs.cashu.space">Cashu NUTs</a> for the blind token mint.
+        </p>
+    </div>
+
+    <footer>
+        DiscordCash &mdash; Powered by <a href="https://z.cash">Zcash</a> &amp; <a href="https://cashu.space">Cashu</a>
+    </footer>
+
+</body>
+</html>
